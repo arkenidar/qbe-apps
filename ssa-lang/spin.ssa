@@ -1,0 +1,190 @@
+# rotating triangle (left) + rotating wireframe cube (right)
+# build: qbe -o out/spin.s ssa-lang/spin.ssa && gcc out/spin.s -o out/spin -lSDL2 -lm
+
+data $title = { b "qbe spin", b 0 }
+
+export function w $main() {
+@start
+	%r0 =w call $SDL_Init(w 32)
+	%win =l call $SDL_CreateWindow(l $title, w 805240832, w 805240832, w 800, w 600, w 0)
+	%ren =l call $SDL_CreateRenderer(l %win, w -1, w 1)
+	%ev =l alloc8 64
+
+	# projected cube vertices: 8 x (sx,sy) words
+	%pts =l alloc4 64
+
+	# rotation angle, advances each frame
+	%a =d copy d_0.0
+
+@frame
+@poll
+	%got =w call $SDL_PollEvent(l %ev)
+	jnz %got, @check, @render
+@check
+	%et =w loadw %ev
+	%isq =w ceqw %et, 256
+	jnz %isq, @quit, @chkkey
+@chkkey
+	# SDL_KEYDOWN = 0x300; keysym.sym at byte offset 20, SDLK_ESCAPE = 27
+	%isk =w ceqw %et, 768
+	jnz %isk, @chkesc, @poll
+@chkesc
+	%pk =l add %ev, 20
+	%sym =w loadw %pk
+	%ise =w ceqw %sym, 27
+	jnz %ise, @quit, @poll
+
+@render
+	%r1 =w call $SDL_SetRenderDrawColor(l %ren, w 16, w 16, w 32, w 255)
+	%r2 =w call $SDL_RenderClear(l %ren)
+
+	# --- triangle: 3 points on circle radius 120 around (200,300) ---
+	# point k at angle a + k*2pi/3
+	%r3 =w call $SDL_SetRenderDrawColor(l %ren, w 80, w 255, w 120, w 255)
+
+	%c0 =d call $cos(d %a)
+	%s0 =d call $sin(d %a)
+	%a1 =d add %a, d_2.0943951
+	%c1 =d call $cos(d %a1)
+	%s1 =d call $sin(d %a1)
+	%a2 =d add %a1, d_2.0943951
+	%c2 =d call $cos(d %a2)
+	%s2 =d call $sin(d %a2)
+
+	%f =d mul %c0, d_120.0
+	%t0x =w dtosi %f
+	%t0x =w add %t0x, 200
+	%f =d mul %s0, d_120.0
+	%t0y =w dtosi %f
+	%t0y =w add %t0y, 300
+	%f =d mul %c1, d_120.0
+	%t1x =w dtosi %f
+	%t1x =w add %t1x, 200
+	%f =d mul %s1, d_120.0
+	%t1y =w dtosi %f
+	%t1y =w add %t1y, 300
+	%f =d mul %c2, d_120.0
+	%t2x =w dtosi %f
+	%t2x =w add %t2x, 200
+	%f =d mul %s2, d_120.0
+	%t2y =w dtosi %f
+	%t2y =w add %t2y, 300
+
+	%r4 =w call $SDL_RenderDrawLine(l %ren, w %t0x, w %t0y, w %t1x, w %t1y)
+	%r5 =w call $SDL_RenderDrawLine(l %ren, w %t1x, w %t1y, w %t2x, w %t2y)
+	%r6 =w call $SDL_RenderDrawLine(l %ren, w %t2x, w %t2y, w %t0x, w %t0y)
+
+	# --- cube: vertices (+-1,+-1,+-1), rotate Y by a, X by a*0.7,
+	#     perspective-project around (600,300) ---
+	%r7 =w call $SDL_SetRenderDrawColor(l %ren, w 120, w 180, w 255, w 255)
+
+	%cA =d copy %c0
+	%sA =d copy %s0
+	%ab =d mul %a, d_0.7
+	%cB =d call $cos(d %ab)
+	%sB =d call $sin(d %ab)
+
+	# project all 8 vertices into %pts
+	%i =w copy 0
+@vloop
+	%cv =w csltw %i, 8
+	jnz %cv, @vbody, @edges
+@vbody
+	# unit coords from index bits: (bit ? 1.0 : -1.0) == bit*2 - 1
+	%b =w and %i, 1
+	%b =w mul %b, 2
+	%b =w sub %b, 1
+	%vx =d swtof %b
+	%b =w and %i, 2
+	%b =w mul %b, 1
+	%b =w sub %b, 1
+	%vy =d swtof %b
+	%b =w and %i, 4
+	%b =w div %b, 2
+	%b =w sub %b, 1
+	%vz =d swtof %b
+
+	# rotate around Y: x1 = x*cA + z*sA ; z1 = -x*sA + z*cA
+	%p =d mul %vx, %cA
+	%q =d mul %vz, %sA
+	%x1 =d add %p, %q
+	%p =d mul %vx, %sA
+	%q =d mul %vz, %cA
+	%z1 =d sub %q, %p
+	# rotate around X: y2 = y*cB - z1*sB ; z2 = y*sB + z1*cB
+	%p =d mul %vy, %cB
+	%q =d mul %z1, %sB
+	%y2 =d sub %p, %q
+	%p =d mul %vy, %sB
+	%q =d mul %z1, %cB
+	%z2 =d add %p, %q
+
+	# perspective: s = 250/(z2+3.5)
+	%zc =d add %z2, d_3.5
+	%s =d div d_250.0, %zc
+	%p =d mul %x1, %s
+	%sx =w dtosi %p
+	%sx =w add %sx, 600
+	%q =d mul %y2, %s
+	%sy =w dtosi %q
+	%sy =w sub 300, %sy
+
+	# pts[i] = (sx, sy)
+	%il =l extsw %i
+	%off =l mul %il, 8
+	%pp =l add %pts, %off
+	storew %sx, %pp
+	%pp =l add %pp, 4
+	storew %sy, %pp
+
+	%i =w add %i, 1
+	jmp @vloop
+
+@edges
+	# for i in 0..7, bit in {1,2,4}: if !(i&bit) draw pts[i] -> pts[i|bit]
+	%i =w copy 0
+@eloop
+	%ce =w csltw %i, 8
+	jnz %ce, @ebody, @present
+@ebody
+	%bit =w copy 1
+@bloop
+	%cbit =w cslew %bit, 4
+	jnz %cbit, @bbody, @enext
+@bbody
+	%hit =w and %i, %bit
+	jnz %hit, @bnext, @edraw
+@edraw
+	%j =w or %i, %bit
+	%il =l extsw %i
+	%off =l mul %il, 8
+	%pi =l add %pts, %off
+	%ix =w loadw %pi
+	%pi =l add %pi, 4
+	%iy =w loadw %pi
+	%jl =l extsw %j
+	%off =l mul %jl, 8
+	%pj =l add %pts, %off
+	%jx =w loadw %pj
+	%pj =l add %pj, 4
+	%jy =w loadw %pj
+	%r8 =w call $SDL_RenderDrawLine(l %ren, w %ix, w %iy, w %jx, w %jy)
+@bnext
+	%bit =w mul %bit, 2
+	jmp @bloop
+@enext
+	%i =w add %i, 1
+	jmp @eloop
+
+@present
+	call $SDL_RenderPresent(l %ren)
+	call $SDL_Delay(w 16)
+	%a =d add %a, d_0.02
+	jmp @frame
+
+@quit
+	call $SDL_DestroyRenderer(l %ren)
+	call $SDL_DestroyWindow(l %win)
+	call $SDL_Quit()
+	ret 0
+}

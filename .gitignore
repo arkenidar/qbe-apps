@@ -1,0 +1,12 @@
+
+# *out* : a.out, a.exe, out.s, etc.
+
+a.*
+# a.out and a.exe
+
+*.s
+# assembly files like out.s
+
+out/*
+!out/.gitkeep
+# build artifacts (binaries + assembly); keep the directory itself

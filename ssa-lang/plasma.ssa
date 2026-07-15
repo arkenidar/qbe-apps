@@ -1,0 +1,114 @@
+# old-school plasma: color from sin() combinations, animated phase
+# 8px cells over 800x600 (100x75 cells)
+# build: qbe -o out/plasma.s ssa-lang/plasma.ssa && gcc out/plasma.s -o out/plasma -lSDL2 -lm
+
+data $title = { b "qbe plasma", b 0 }
+
+# channel = (sin(v*pi + phase) + 1) * 127.5
+function w $channel(d %v, d %phase) {
+@start
+	%p =d mul %v, d_3.14159
+	%p =d add %p, %phase
+	%s =d call $sin(d %p)
+	%s =d add %s, d_1.0
+	%s =d mul %s, d_127.5
+	%c =w dtosi %s
+	ret %c
+}
+
+export function w $main() {
+@start
+	%r0 =w call $SDL_Init(w 32)
+	%win =l call $SDL_CreateWindow(l $title, w 805240832, w 805240832, w 800, w 600, w 0)
+	%ren =l call $SDL_CreateRenderer(l %win, w -1, w 1)
+	%ev =l alloc8 64
+
+	# rect buffer (x,y,w,h), fixed 8x8 cell size
+	%rect =l alloc4 16
+	%pw =l add %rect, 8
+	storew 8, %pw
+	%ph =l add %rect, 12
+	storew 8, %ph
+
+	# animation phase
+	%t =d copy d_0.0
+
+@frame
+@poll
+	%got =w call $SDL_PollEvent(l %ev)
+	jnz %got, @check, @render
+@check
+	%et =w loadw %ev
+	%isq =w ceqw %et, 256
+	jnz %isq, @quit, @chkkey
+@chkkey
+	# SDL_KEYDOWN = 0x300; keysym.sym at byte offset 20, SDLK_ESCAPE = 27
+	%isk =w ceqw %et, 768
+	jnz %isk, @chkesc, @poll
+@chkesc
+	%pk =l add %ev, 20
+	%sym =w loadw %pk
+	%ise =w ceqw %sym, 27
+	jnz %ise, @quit, @poll
+
+@render
+	%y =w copy 0
+@loopy
+	%cy =w csltw %y, 75
+	jnz %cy, @bodyy, @present
+@bodyy
+	%x =w copy 0
+@loopx
+	%cx =w csltw %x, 100
+	jnz %cx, @bodyx, @nexty
+@bodyx
+	# v = sin(x*0.11 + t) + sin(y*0.13 + t*1.3) + sin((x+y)*0.07 + t*0.7)
+	%fx =d swtof %x
+	%fy =d swtof %y
+	%a1 =d mul %fx, d_0.11
+	%a1 =d add %a1, %t
+	%s1 =d call $sin(d %a1)
+	%a2 =d mul %fy, d_0.13
+	%t13 =d mul %t, d_1.3
+	%a2 =d add %a2, %t13
+	%s2 =d call $sin(d %a2)
+	%fxy =d add %fx, %fy
+	%a3 =d mul %fxy, d_0.07
+	%t07 =d mul %t, d_0.7
+	%a3 =d add %a3, %t07
+	%s3 =d call $sin(d %a3)
+	%v =d add %s1, %s2
+	%v =d add %v, %s3
+
+	# RGB from three phase-shifted channels (0, 2pi/3, 4pi/3)
+	%cr =w call $channel(d %v, d d_0.0)
+	%cg =w call $channel(d %v, d d_2.094)
+	%cb =w call $channel(d %v, d d_4.188)
+	%r1 =w call $SDL_SetRenderDrawColor(l %ren, w %cr, w %cg, w %cb, w 255)
+
+	%sx =w mul %x, 8
+	%sy =w mul %y, 8
+	%px =l add %rect, 0
+	storew %sx, %px
+	%py =l add %rect, 4
+	storew %sy, %py
+	%r2 =w call $SDL_RenderFillRect(l %ren, l %rect)
+
+	%x =w add %x, 1
+	jmp @loopx
+@nexty
+	%y =w add %y, 1
+	jmp @loopy
+
+@present
+	call $SDL_RenderPresent(l %ren)
+	call $SDL_Delay(w 16)
+	%t =d add %t, d_0.04
+	jmp @frame
+
+@quit
+	call $SDL_DestroyRenderer(l %ren)
+	call $SDL_DestroyWindow(l %win)
+	call $SDL_Quit()
+	ret 0
+}

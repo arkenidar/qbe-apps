@@ -1,0 +1,101 @@
+# bouncing ball, ~60fps animation loop
+# build: qbe -o out/bounce.s ssa-lang/bounce.ssa && gcc out/bounce.s -o out/bounce -lSDL2 -lm
+
+data $title = { b "qbe bounce", b 0 }
+
+# filled circle via horizontal scanlines: dx = floor(sqrt(r*r - dy*dy))
+function $fillcircle(l %ren, w %cx, w %cy, w %r) {
+@start
+	%rr =w mul %r, %r
+	%dy =w sub 0, %r
+@loop
+	%c =w cslew %dy, %r
+	jnz %c, @body, @done
+@body
+	%dy2 =w mul %dy, %dy
+	%d2 =w sub %rr, %dy2
+	%fd =d swtof %d2
+	%fs =d call $sqrt(d %fd)
+	%dx =w dtosi %fs
+	%x0 =w sub %cx, %dx
+	%x1 =w add %cx, %dx
+	%yy =w add %cy, %dy
+	%t =w call $SDL_RenderDrawLine(l %ren, w %x0, w %yy, w %x1, w %yy)
+	%dy =w add %dy, 1
+	jmp @loop
+@done
+	ret
+}
+
+export function w $main() {
+@start
+	# SDL_INIT_VIDEO = 0x20
+	%r0 =w call $SDL_Init(w 32)
+	# SDL_WINDOWPOS_CENTERED = 0x2FFF0000
+	%win =l call $SDL_CreateWindow(l $title, w 805240832, w 805240832, w 800, w 600, w 0)
+	%ren =l call $SDL_CreateRenderer(l %win, w -1, w 1)
+	%ev =l alloc8 64
+
+	# ball state: position (x,y), velocity (vx,vy), radius 30
+	%x =w copy 400
+	%y =w copy 300
+	%vx =w copy 4
+	%vy =w copy 3
+
+@frame
+	# drain pending events, exit on SDL_QUIT = 0x100 or ESC
+@poll
+	%got =w call $SDL_PollEvent(l %ev)
+	jnz %got, @check, @step
+@check
+	%t =w loadw %ev
+	%isq =w ceqw %t, 256
+	jnz %isq, @quit, @chkkey
+@chkkey
+	# SDL_KEYDOWN = 0x300; keysym.sym at byte offset 20, SDLK_ESCAPE = 27
+	%isk =w ceqw %t, 768
+	jnz %isk, @chkesc, @poll
+@chkesc
+	%pk =l add %ev, 20
+	%sym =w loadw %pk
+	%ise =w ceqw %sym, 27
+	jnz %ise, @quit, @poll
+
+@step
+	%x =w add %x, %vx
+	%y =w add %y, %vy
+	# bounce off left/right walls
+	%xl =w sub %x, 30
+	%cl =w csltw %xl, 0
+	%xr =w add %x, 30
+	%cr =w csgew %xr, 800
+	%cx =w or %cl, %cr
+	jnz %cx, @flipx, @checky
+@flipx
+	%vx =w sub 0, %vx
+@checky
+	# bounce off top/bottom walls
+	%yt =w sub %y, 30
+	%ct =w csltw %yt, 0
+	%yb =w add %y, 30
+	%cb =w csgew %yb, 600
+	%cy =w or %ct, %cb
+	jnz %cy, @flipy, @draw
+@flipy
+	%vy =w sub 0, %vy
+
+@draw
+	%r1 =w call $SDL_SetRenderDrawColor(l %ren, w 16, w 16, w 32, w 255)
+	%r2 =w call $SDL_RenderClear(l %ren)
+	%r3 =w call $SDL_SetRenderDrawColor(l %ren, w 255, w 80, w 80, w 255)
+	call $fillcircle(l %ren, w %x, w %y, w 30)
+	call $SDL_RenderPresent(l %ren)
+	call $SDL_Delay(w 16)
+	jmp @frame
+
+@quit
+	call $SDL_DestroyRenderer(l %ren)
+	call $SDL_DestroyWindow(l %win)
+	call $SDL_Quit()
+	ret 0
+}

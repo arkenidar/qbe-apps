@@ -1,0 +1,63 @@
+# blank starter — empty window, quits on close or ESC
+# copy this file to begin a new demo; fill in the PLACEHOLDER sections
+# build: qbe -o out/blank.s ssa-lang/blank.ssa && gcc out/blank.s -o out/blank -lSDL2 -lm
+# (or: make blank)
+
+data $title = { b "blank (qbe)", b 0 }
+
+export function w $main() {
+@start
+	# SDL_INIT_VIDEO = 0x20
+	%r0 =w call $SDL_Init(w 32)
+	# SDL_WINDOWPOS_CENTERED = 0x2FFF0000
+	%win =l call $SDL_CreateWindow(l $title, w 805240832, w 805240832, w 800, w 600, w 0)
+	%ren =l call $SDL_CreateRenderer(l %win, w -1, w 1)
+	%ev =l alloc8 64
+
+	# PLACEHOLDER: state that persists across frames
+	# e.g.  %x =w copy 400
+	#       %t =d copy d_0.0
+
+@frame
+	# drain pending events, exit on SDL_QUIT = 0x100 or ESC
+@poll
+	%got =w call $SDL_PollEvent(l %ev)
+	jnz %got, @check, @update
+@check
+	%et =w loadw %ev
+	%isq =w ceqw %et, 256
+	jnz %isq, @quit, @chkkey
+@chkkey
+	# SDL_KEYDOWN = 0x300; keysym.sym at byte offset 20, SDLK_ESCAPE = 27
+	%isk =w ceqw %et, 768
+	jnz %isk, @chkesc, @poll
+@chkesc
+	%pk =l add %ev, 20
+	%sym =w loadw %pk
+	%ise =w ceqw %sym, 27
+	jnz %ise, @quit, @poll
+
+@update
+	# PLACEHOLDER: per-frame state update
+	# e.g.  %x =w add %x, 1
+	#       %t =d add %t, d_0.02
+
+	# clear to dark blue-grey
+	%r1 =w call $SDL_SetRenderDrawColor(l %ren, w 16, w 16, w 32, w 255)
+	%r2 =w call $SDL_RenderClear(l %ren)
+
+	# PLACEHOLDER: drawing
+	# e.g.  %r3 =w call $SDL_SetRenderDrawColor(l %ren, w 255, w 80, w 80, w 255)
+	#       %r4 =w call $SDL_RenderDrawLine(l %ren, w 0, w 0, w 800, w 600)
+
+	call $SDL_RenderPresent(l %ren)
+	# ~60 fps
+	call $SDL_Delay(w 16)
+	jmp @frame
+
+@quit
+	call $SDL_DestroyRenderer(l %ren)
+	call $SDL_DestroyWindow(l %win)
+	call $SDL_Quit()
+	ret 0
+}

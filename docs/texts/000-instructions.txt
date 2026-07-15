@@ -1,0 +1,16 @@
+
+
+ 1170  which qbe
+ 1171  git clone git://c9x.me/qbe.git
+ 1172  cd qbe/
+ 1173  make
+ 1174  make install
+ 1175  sudo make install
+ 1176  which qbe
+
+ 1177  qbe -o out.s circle-loop.ssa
+ 1178  gcc out.s -lm -lSDL2
+ 1179  ./a.out 
+
+ 1180  history 
+arkenidar@infotool:~$ 

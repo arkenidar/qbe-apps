@@ -1,0 +1,104 @@
+# checkerboard 800x600 (40px cells) + red filled circle at center
+# build: qbe circle.ssa > circle.s && cc circle.s -o circle -lSDL2 -lm
+
+data $title = { b "qbe circle", b 0 }
+
+export function w $main() {
+@start
+	# SDL_INIT_VIDEO = 0x20
+	%r0 =w call $SDL_Init(w 32)
+
+	# SDL_WINDOWPOS_CENTERED = 0x2FFF0000
+	%win =l call $SDL_CreateWindow(l $title, w 805240832, w 805240832, w 800, w 600, w 0)
+	%ren =l call $SDL_CreateRenderer(l %win, w -1, w 1)
+
+	# rect buffer: 4 ints (x,y,w,h)
+	%rect =l alloc4 16
+	%pw =l add %rect, 8
+	storew 40, %pw
+	%ph =l add %rect, 12
+	storew 40, %ph
+
+	# --- checkerboard ---
+	%y =w copy 0
+@loopy
+	%cy =w csltw %y, 600
+	jnz %cy, @bodyy, @grid_done
+@bodyy
+	%x =w copy 0
+@loopx
+	%cx =w csltw %x, 800
+	jnz %cx, @bodyx, @nexty
+@bodyx
+	# parity of (x/40 + y/40)
+	%ix =w div %x, 40
+	%iy =w div %y, 40
+	%s =w add %ix, %iy
+	%par =w and %s, 1
+	jnz %par, @black, @white
+@white
+	%r1 =w call $SDL_SetRenderDrawColor(l %ren, w 255, w 255, w 255, w 255)
+	jmp @draw
+@black
+	%r2 =w call $SDL_SetRenderDrawColor(l %ren, w 0, w 0, w 0, w 255)
+@draw
+	%px =l add %rect, 0
+	storew %x, %px
+	%py =l add %rect, 4
+	storew %y, %py
+	%r3 =w call $SDL_RenderFillRect(l %ren, l %rect)
+	%x =w add %x, 40
+	jmp @loopx
+@nexty
+	%y =w add %y, 40
+	jmp @loopy
+@grid_done
+
+	# --- red filled circle, center (400,300), radius 100, scanlines ---
+	%r4 =w call $SDL_SetRenderDrawColor(l %ren, w 255, w 0, w 0, w 255)
+	%dy =w copy -100
+@cloop
+	%cd =w csltw %dy, 101
+	jnz %cd, @cbody, @circle_done
+@cbody
+	# dx = floor(sqrt(r*r - dy*dy))
+	%dy2 =w mul %dy, %dy
+	%d2 =w sub 10000, %dy2
+	%fd =d swtof %d2
+	%fs =d call $sqrt(d %fd)
+	%dx =w dtosi %fs
+	%x0 =w sub 400, %dx
+	%x1 =w add 400, %dx
+	%yy =w add 300, %dy
+	%r5 =w call $SDL_RenderDrawLine(l %ren, w %x0, w %yy, w %x1, w %yy)
+	%dy =w add %dy, 1
+	jmp @cloop
+@circle_done
+
+	%r6 =w call $SDL_RenderPresent(l %ren)
+
+	# --- event loop: exit on window close (SDL_QUIT = 0x100) or ESC ---
+	%ev =l alloc8 64
+@wait
+	%got =w call $SDL_WaitEvent(l %ev)
+	jnz %got, @check, @quit
+@check
+	%t =w loadw %ev
+	%isq =w ceqw %t, 256
+	jnz %isq, @quit, @chkkey
+@chkkey
+	# SDL_KEYDOWN = 0x300; keysym.sym at byte offset 20, SDLK_ESCAPE = 27
+	%isk =w ceqw %t, 768
+	jnz %isk, @chkesc, @wait
+@chkesc
+	%pk =l add %ev, 20
+	%sym =w loadw %pk
+	%ise =w ceqw %sym, 27
+	jnz %ise, @quit, @wait
+@quit
+
+	call $SDL_DestroyRenderer(l %ren)
+	call $SDL_DestroyWindow(l %win)
+	call $SDL_Quit()
+	ret 0
+}
