@@ -12,6 +12,24 @@ export function w $main() {
 	%win =l call $SDL_CreateWindow(l $title, w 805240832, w 805240832, w 800, w 600, w 0)
 	%ren =l call $SDL_CreateRenderer(l %win, w -1, w 1)
 
+	# center explicitly: the CENTERED hint at creation is unreliable
+	# under some window managers (Termux:X11 notably)
+	# SDL_DisplayMode is 24 bytes: w at offset 4, h at offset 8
+	%dm =l alloc8 24
+	%rc =w call $SDL_GetCurrentDisplayMode(w 0, l %dm)
+	jnz %rc, @nocenter, @center
+@center
+	%pdw =l add %dm, 4
+	%dw =w loadw %pdw
+	%cwx =w sub %dw, 800
+	%cwx =w div %cwx, 2
+	%pdh =l add %dm, 8
+	%dh =w loadw %pdh
+	%cwy =w sub %dh, 600
+	%cwy =w div %cwy, 2
+	call $SDL_SetWindowPosition(l %win, w %cwx, w %cwy)
+@nocenter
+
 	# rect buffer: 4 ints (x,y,w,h)
 	%rect =l alloc4 16
 	%pw =l add %rect, 8

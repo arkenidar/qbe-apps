@@ -11,6 +11,12 @@ int main(void)
 		SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 800, 600, 0);
 	SDL_Renderer *ren = SDL_CreateRenderer(win, -1, SDL_RENDERER_ACCELERATED);
 
+	/* center explicitly: the CENTERED hint at creation is unreliable
+	 * under some window managers (Termux:X11 notably) */
+	SDL_DisplayMode dm;
+	if (SDL_GetCurrentDisplayMode(0, &dm) == 0)
+		SDL_SetWindowPosition(win, (dm.w - 800) / 2, (dm.h - 600) / 2);
+
 	/* --- checkerboard --- */
 	SDL_Rect rect = { 0, 0, 40, 40 };
 	for (int y = 0; y < 600; y += 40) {
