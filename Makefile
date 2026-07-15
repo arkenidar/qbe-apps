@@ -4,7 +4,9 @@
 #   make plasma / spin / circle-loop
 #   make clean
 
-QBE    := qbe
+# qbe from PATH if installed, else a local build at ~/qbe/qbe
+# (e.g. on Termux, where "make install" isn't used); override with make QBE=...
+QBE    := $(shell command -v qbe 2>/dev/null || echo $(HOME)/qbe/qbe)
 CC     := gcc
 LIBS   := -lSDL2 -lm
 

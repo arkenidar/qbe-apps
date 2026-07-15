@@ -26,6 +26,10 @@ You need `gcc`, SDL2 dev headers (`libsdl2-dev`), and `qbe` — see
 [docs/texts/000-instructions.txt](docs/texts/000-instructions.txt) for how qbe
 was installed here (clone from `git://c9x.me/qbe.git`, `make`, `sudo make install`).
 
+If `qbe` is not on your PATH — e.g. on Termux, where you just build it in place —
+the Makefile falls back to `~/qbe/qbe`; any other location works with
+`make QBE=/path/to/qbe`.
+
 ```sh
 make all        # build everything
 make spin       # build one demo, both versions: out/spin and out/spin-c
