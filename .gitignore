@@ -10,3 +10,9 @@ a.*
 out/*
 !out/.gitkeep
 # build artifacts (binaries + assembly); keep the directory itself
+
+# https://www.codeblocks.org/ c.b. project (cbp)
+/codeblocks/
+!/qbe-apps.cbp
+/qbe-apps.depend
+/qbe-apps.layout

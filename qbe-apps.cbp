@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="qbe-apps" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="blank">
+				<Option output="codeblocks/blank/blank" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="codeblocks/blank/" />
+				<Option object_output="codeblocks/blank/" />
+				<Option type="0" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-g" />
+				</Compiler>
+				<Linker>
+					<Add library="m" />
+					<Add library="SDL2" />
+				</Linker>
+			</Target>
+			<Target title="bounce">
+				<Option output="codeblocks/bounce/bounce" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="codeblocks/bounce/" />
+				<Option object_output="codeblocks/bounce/" />
+				<Option type="0" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-g" />
+				</Compiler>
+				<Linker>
+					<Add library="m" />
+					<Add library="SDL2" />
+				</Linker>
+			</Target>
+			<Target title="plasma">
+				<Option output="codeblocks/plasma/plasma" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="codeblocks/plasma/" />
+				<Option object_output="codeblocks/plasma/" />
+				<Option type="0" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-g" />
+				</Compiler>
+				<Linker>
+					<Add library="m" />
+					<Add library="SDL2" />
+				</Linker>
+			</Target>
+			<Target title="spin">
+				<Option output="codeblocks/spin/spin" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="codeblocks/spin/" />
+				<Option object_output="codeblocks/spin/" />
+				<Option type="0" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-g" />
+				</Compiler>
+				<Linker>
+					<Add library="m" />
+					<Add library="SDL2" />
+				</Linker>
+			</Target>
+			<Target title="circle-loop">
+				<Option output="codeblocks/circle-loop/circle-loop" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="codeblocks/circle-loop/" />
+				<Option object_output="codeblocks/circle-loop/" />
+				<Option type="0" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-g" />
+				</Compiler>
+				<Linker>
+					<Add library="m" />
+					<Add library="SDL2" />
+				</Linker>
+			</Target>
+		</Build>
+		<Compiler>
+			<Add option="-Wall" />
+		</Compiler>
+		<Unit filename="c-lang/blank.c">
+			<Option compilerVar="CC" />
+			<Option target="blank" />
+		</Unit>
+		<Unit filename="c-lang/bounce.c">
+			<Option compilerVar="CC" />
+			<Option target="bounce" />
+		</Unit>
+		<Unit filename="c-lang/circle-loop.c">
+			<Option compilerVar="CC" />
+			<Option target="circle-loop" />
+		</Unit>
+		<Unit filename="c-lang/plasma.c">
+			<Option compilerVar="CC" />
+			<Option target="plasma" />
+		</Unit>
+		<Unit filename="c-lang/spin.c">
+			<Option compilerVar="CC" />
+			<Option target="spin" />
+		</Unit>
+		<Extensions />
+	</Project>
+</CodeBlocks_project_file>
