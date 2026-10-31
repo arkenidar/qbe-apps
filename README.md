@@ -38,6 +38,30 @@ make spin       # build one demo, both versions: out/spin and out/spin-c
 make clean
 ```
 
+### CMake (alternative for the C demos)
+
+The C demos can also be built and run with CMake — handy when you want one
+executable per program plus a `run-<name>` target that builds-then-runs it.
+SDL2 is located via `pkg-config`, so the correct flags are used on every
+platform (on Windows/mingw it adds `-Dmain=SDL_main -mwindows -lSDL2main`,
+which a bare `-lSDL2 -lm` would miss).
+
+```sh
+cmake -S . -B build -G Ninja -DCMAKE_C_COMPILER=gcc
+cmake --build build                    # build all 5 programs
+cmake --build build --target bounce    # build just one
+cmake --build build --target run-bounce  # build + run just one
+cmake --build build --target run-all     # run every demo in sequence
+```
+
+Every `c-lang/*.c` is picked up automatically, so a new demo only needs a new
+`.c` file (then re-configure). Binaries land in `build/` (git-ignored).
+
+> **Note:** on machines with an old MSVC (e.g. VC98) on `PATH`, CMake may pick
+> that as the compiler by default; pass `-DCMAKE_C_COMPILER=gcc` (or
+> `set CC=gcc`) to use the repo's gcc. If you already configured without it,
+> delete `build/` before reconfiguring, since the compiler choice is cached.
+
 The pipeline for the IL versions is two steps — QBE compiles IL to assembly,
 gcc assembles and links it:
 
@@ -86,6 +110,7 @@ c-lang/     equivalent C programs (*.c)
 out/        build artifacts: binaries and .s assembly (git-ignored)
 docs/       install notes and the IL cheatsheet
 Makefile    builds every demo in both flavors
+CMakeLists.txt  builds/runs the C demos (alternative to the Makefile)
 LICENSE     MIT
 ```
 
