@@ -11,7 +11,7 @@ static void fillcircle(SDL_Renderer *ren, int cx, int cy, int r)
 	}
 }
 
-int main(void)
+int main(int,  char **)
 {
 	SDL_Init(SDL_INIT_VIDEO);
 	SDL_Window *win = SDL_CreateWindow("bounce (C)",

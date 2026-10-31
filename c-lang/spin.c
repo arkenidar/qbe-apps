@@ -4,7 +4,7 @@
 #include <SDL2/SDL.h>
 #include <math.h>
 
-int main(void)
+int main(int,  char **)
 {
 	SDL_Init(SDL_INIT_VIDEO);
 	SDL_Window *win = SDL_CreateWindow("spin (C)",

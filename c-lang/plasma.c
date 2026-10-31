@@ -5,7 +5,7 @@
 
 #define CELL 8
 
-int main(void)
+int main(int,  char **)
 {
 	SDL_Init(SDL_INIT_VIDEO);
 	SDL_Window *win = SDL_CreateWindow("plasma (C)",
