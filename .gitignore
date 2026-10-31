@@ -16,3 +16,7 @@ out/*
 !/qbe-apps.cbp
 /qbe-apps.depend
 /qbe-apps.layout
+
+# CMake build trees
+/build/
+/cmake-build-*/
